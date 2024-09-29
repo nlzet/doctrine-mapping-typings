@@ -113,10 +113,6 @@ class ModelTypingGenerator
 
     private function getNullable(\ReflectionProperty $property): string
     {
-        if ('any' === $this->getType($property)) {
-            return '';
-        }
-
         if ($this->classMeta->hasAssociation($property->getName())) {
             $associationMapping = $this->getAssociationMapping($property->getName());
 
@@ -127,6 +123,10 @@ class ModelTypingGenerator
             // @codeCoverageIgnoreEnd
 
             return $associationMapping->isToOne() ? '?' : '';
+        }
+
+        if ('any' === $this->getType($property)) {
+            return '';
         }
 
         return $this->classMeta->isNullable($property->getName()) ? '?' : '';
