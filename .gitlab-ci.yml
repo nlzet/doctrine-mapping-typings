@@ -1,0 +1,83 @@
+stages:
+  - analyze
+
+cache: &global_cache
+  key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+  paths:
+    - .phpunit.result.cache
+    - .php-cs-fixer.cache
+  policy: pull-push
+
+before_script:
+  - ssh-keyscan -p 22 gitlab.kreable.com >> ~/.ssh/known_hosts
+  - composer config -g github-oauth.github.com $GITHUB_TOKEN
+  - eval $(ssh-agent) && ssh-add $SSH_DEPLOY_KEY
+
+test:analyze8.3-sf6.4:
+  tags: ['php83']
+  stage: analyze
+  cache:
+    <<: *global_cache
+    key: "$CI_JOB_STAGE-php83"
+  script:
+    - rm -Rf composer.lock
+    - composer config discard-changes true
+    - composer install --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - composer config --no-plugins allow-plugins.symfony/flex true
+    - composer config extra.symfony.require "6.4"
+    - composer require --no-update --no-interaction symfony/flex
+    - composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - rm -f ./bin/console tests/bootstrap.php
+    - make analyze
+
+test:analyze8.3-sf7.x:
+  tags: ['php83']
+  stage: analyze
+  cache:
+    <<: *global_cache
+    key: "$CI_JOB_STAGE-php83"
+  script:
+    - rm -Rf composer.lock
+    - composer config discard-changes true
+    - composer install --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - composer config --no-plugins allow-plugins.symfony/flex true
+    - composer config extra.symfony.require "~7.0"
+    - composer require --no-update --no-interaction symfony/flex
+    - composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - rm -f ./bin/console tests/bootstrap.php
+    - make analyze
+
+test:analyze8.1-minimal:
+  tags: ['php81']
+  stage: analyze
+  cache:
+    <<: *global_cache
+    key: "$CI_JOB_STAGE-php81"
+  script:
+    - rm -Rf composer.lock
+    - composer config discard-changes true
+    - composer install --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - composer config --no-plugins allow-plugins.symfony/flex true
+    - composer config extra.symfony.require "5.4.*"
+    - composer require --no-update --no-interaction doctrine/common:"~3.0"
+    - composer require --no-update --no-interaction doctrine/orm:"~2.10"
+    - composer require --no-update --no-interaction doctrine/dbal:"~2.12"
+    - composer require --no-update --no-interaction symfony/flex:">=1.0"
+    - composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - rm -f ./bin/console tests/bootstrap.php
+    - make test
+
+check:cs:
+  tags: ['php83']
+  stage: analyze
+  cache:
+    <<: *global_cache
+    key: "$CI_JOB_STAGE-php83"
+  allow_failure: true
+  script:
+    - rm -Rf composer.lock
+    - composer config discard-changes true
+    - composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+    - rm -f ./bin/console tests/bootstrap.php
+    - make cs
+    - make analyze-full
