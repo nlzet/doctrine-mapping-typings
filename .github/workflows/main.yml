@@ -1,0 +1,63 @@
+name: CICD Pipeline
+on: push
+
+jobs:
+  test_analyze83_sf7x:
+    runs-on: ubuntu-latest
+    steps:
+      -   name: Checkout
+          uses: actions/checkout@v3
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - run: rm -Rf composer.lock
+      - run: composer config discard-changes true
+      - run: composer install --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+      - run: composer config --no-plugins allow-plugins.symfony/flex true
+      - run: composer config extra.symfony.require "~7.0"
+      - run: composer require --no-update --no-interaction symfony/flex
+      - run: composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+      - run: rm -f ./bin/console tests/bootstrap.php
+      - run: make analyze
+
+  test_analyze81_sf64:
+    runs-on: ubuntu-latest
+    steps:
+      -   name: Checkout
+          uses: actions/checkout@v3
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+      - run: rm -Rf composer.lock
+      - run: composer config discard-changes true
+      - run: composer install --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+      - run: composer config --no-plugins allow-plugins.symfony/flex true
+      - run: composer config extra.symfony.require "6.4.*"
+      - run: composer require --no-update --no-interaction symfony/flex
+      - run: composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+      - run: rm -f ./bin/console tests/bootstrap.php
+      - run: make analyze
+
+  test_analyze81_minimal:
+    runs-on: ubuntu-latest
+    steps:
+      -   name: Checkout
+          uses: actions/checkout@v3
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - run:  rm -Rf composer.lock
+      - run:  composer config discard-changes true
+      - run:  composer install --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+      - run:  composer config --no-plugins allow-plugins.symfony/flex true
+      - run:  composer config extra.symfony.require "5.4.*"
+      - run:  composer require --no-update --no-interaction doctrine/common:"~3.0"
+      - run:  composer require --no-update --no-interaction doctrine/orm:"~2.10"
+      - run:  composer require --no-update --no-interaction doctrine/dbal:"~2.12"
+      - run:  composer require --no-update --no-interaction symfony/flex:">=1.0"
+      - run:  composer update -W --no-interaction --prefer-dist --no-progress --ansi --no-scripts
+      - run:  rm -f ./bin/console tests/bootstrap.php
+      - run:  make test
