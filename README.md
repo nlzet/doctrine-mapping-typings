@@ -70,6 +70,16 @@ echo implode(\PHP_EOL, $outputs).\PHP_EOL;
 export type NlzetCustomAddress = {
     id: number;
     houseNumber?: string;
+    city: string;
+    zip: string;
+    country?: string;
+    floor?: number;
+    latitude?: number;
+    longitude?: number;
+    isPrivate: boolean;
+    createdAt: any;
+    updatedAt: any;
+    createdDate: number;
 };
 
 export type NlzetExamplePropertyTypes = {

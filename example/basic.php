@@ -27,7 +27,7 @@ $generatorConfig = new GeneratorConfig();
 $entitiesPath = __DIR__.'/../tests/Fixture/Entity/';
 $entityNamespace = 'Nlzet\DoctrineMappingTypings\Tests\Fixture\Entity';
 $generatorConfig->setExcludePatterns([]);
-$generatorConfig->setOnlyExposed(true);
+$generatorConfig->setOnlyExposed(false);
 $generatorConfig->setClassAliases(['NlzetDoctrineMappingTypingsTestsFixtureEntityAddress' => 'NlzetCustomAddress']);
 $generatorConfig->setClassReplacements(['NlzetDoctrineMappingTypingsTestsFixtureEntity' => 'Nlzet']);
 
