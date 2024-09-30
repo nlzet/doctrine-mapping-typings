@@ -67,28 +67,7 @@ class EntityReader
         return $onlyIncluded;
     }
 
-    public function isValidRegex(string $_input): bool
-    {
-        try {
-            /**
-             * todo: psalm fix.
-             *
-             * @var non-empty-string $attempt
-             */
-            $attempt = $_input;
-            $output = @preg_match($attempt, $attempt);
-
-            if (false === $output) {
-                throw new \RuntimeException(\sprintf('Invalid regex pattern: %s', $attempt));
-            }
-
-            return true;
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    private function isExcluded(string $class): bool
+    public function isExcluded(string $class): bool
     {
         foreach ($this->generatorConfig->getExcludePatterns() as $excludePattern) {
             if (str_starts_with($excludePattern, '/')) {
@@ -107,7 +86,7 @@ class EntityReader
         return false;
     }
 
-    private function isPropertyExposed(\ReflectionProperty $reflectionProperty): bool
+    public function isPropertyExposed(\ReflectionProperty $reflectionProperty): bool
     {
         if (!$this->generatorConfig->isOnlyExposed() || 'id' === $reflectionProperty->getName()) {
             return true;
@@ -123,5 +102,26 @@ class EntityReader
         }
 
         return 0 !== \count($reflectionProperty->getAttributes(Expose::class));
+    }
+
+    private function isValidRegex(string $_input): bool
+    {
+        try {
+            /**
+             * todo: psalm fix.
+             *
+             * @var non-empty-string $attempt
+             */
+            $attempt = $_input;
+            $output = @preg_match($attempt, $attempt);
+
+            if (false === $output) {
+                throw new \RuntimeException(\sprintf('Invalid regex pattern: %s', $attempt));
+            }
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

@@ -30,7 +30,7 @@ class ModelTypingGenerator
     public function generate(): string
     {
         $className = $this->classMeta->getName();
-        $result = 'export type '.$this->renameClass($className).' = {'.\PHP_EOL;
+        $result = 'export type '.$this->getClassAlias($className).' = {'.\PHP_EOL;
         foreach ($this->properties as $property) {
             $result .= $this->generateProperty($property);
         }
@@ -39,61 +39,7 @@ class ModelTypingGenerator
         return $result;
     }
 
-    private function generateProperty(\ReflectionProperty $property): string
-    {
-        return \sprintf("    %s%s: %s;\n", $this->getName($property), $this->getNullable($property), $this->getType($property));
-    }
-
-    /**
-     * Type support helper for older doctrine versions returning an array.
-     *
-     * @return array<string, mixed>|AssociationMapping
-     */
-    private function getAssociationMapping(string $class): mixed/* : array|AssociationMapping */
-    {
-        /** @var array<string, mixed>|AssociationMapping $associationMapping */
-        $associationMapping = $this->classMeta->getAssociationMapping($class);
-
-        return $associationMapping;
-    }
-
-    private function getType(\ReflectionProperty $property): string
-    {
-        if ($this->classMeta->hasAssociation($property->getName())) {
-            $associationMapping = $this->getAssociationMapping($property->getName());
-
-            // @codeCoverageIgnoreStart
-            if (\is_array($associationMapping)) {
-                $suffix = ClassMetadata::ONE_TO_ONE === $associationMapping['type'] || ClassMetadata::MANY_TO_ONE === $associationMapping['type'] ? '' : '[]';
-                $targetEntity = $associationMapping['targetEntity'] ?? null;
-            // @codeCoverageIgnoreEnd
-            } else {
-                $suffix = $associationMapping->isToOne() ? '' : '[]';
-                $targetEntity = $associationMapping->targetEntity ?? null;
-            }
-
-            // @codeCoverageIgnoreStart
-            if (!\is_string($targetEntity)) {
-                throw new \RuntimeException(\sprintf('Missing target entity for association mapping "%s" in class "%s"', $property->getName(), $this->classMeta->getName()));
-            }
-            // @codeCoverageIgnoreEnd
-
-            return $this->renameClass($targetEntity).$suffix;
-        }
-
-        $doctrineType = $this->classMeta->getTypeOfField($property->getName());
-
-        return match ($doctrineType) {
-            'int', 'integer', 'float', 'decimal', 'time', 'time_immutable', 'timestamp', 'timestamp_immutable' => 'number',
-            'bool', 'boolean' => 'boolean',
-            'string', 'text', 'guid' => 'string',
-            null, 'datetime', 'datetime_immutable', 'date', 'date_immutable', 'object', 'blob' => 'any',
-            'array', 'simple_array', 'json', 'json_array' => 'any[]',
-            default => throw new \RuntimeException(\sprintf('Unsupported type doctrine property "%s" (%s) in class "%s"', $doctrineType, $property->getName(), $this->classMeta->getName())),
-        };
-    }
-
-    public function renameClass(string $class): string
+    public function getClassAlias(string $class): string
     {
         $stripped = str_replace('\\', '', $class);
 
@@ -111,18 +57,78 @@ class ModelTypingGenerator
         return $stripped;
     }
 
+    public function generateProperty(\ReflectionProperty $property): string
+    {
+        return \sprintf(
+            "    %s%s: %s;\n",
+            $property->getName(),
+            $this->getNullable($property),
+            $this->getType($property)
+        );
+    }
+
+    /**
+     * Type support helper for older doctrine versions returning an array.
+     *
+     * @return array<string, mixed>|AssociationMapping
+     */
+    public function getAssociationMapping(string $class): mixed/* : array|AssociationMapping */
+    {
+        /** @var array<string, mixed>|AssociationMapping $associationMapping */
+        $associationMapping = $this->classMeta->getAssociationMapping($class);
+
+        return $associationMapping;
+    }
+
+    public function isAssociationToOne(\ReflectionProperty $property): bool
+    {
+        $associationMapping = $this->getAssociationMapping($property->getName());
+
+        // @codeCoverageIgnoreStart
+        return \is_array($associationMapping)
+            ? ClassMetadata::ONE_TO_ONE === $associationMapping['type'] || ClassMetadata::MANY_TO_ONE === $associationMapping['type']
+            : $associationMapping->isManyToOne() || $associationMapping->isOneToOne();
+        // @codeCoverageIgnoreEnd
+    }
+
+    public function getTargetEntity(\ReflectionProperty $property): string
+    {
+        $associationMapping = $this->getAssociationMapping($property->getName());
+        $targetEntity = \is_array($associationMapping) ? $associationMapping['targetEntity'] : $associationMapping->targetEntity;
+
+        // @codeCoverageIgnoreStart
+        if (!\is_string($targetEntity)) {
+            throw new \RuntimeException(\sprintf('Missing target entity for association mapping "%s" in class "%s"', $property->getName(), $this->classMeta->getName()));
+        }
+        // @codeCoverageIgnoreEnd
+
+        return $targetEntity;
+    }
+
+    private function getType(\ReflectionProperty $property): string
+    {
+        if ($this->classMeta->hasAssociation($property->getName())) {
+            $suffix = $this->isAssociationToOne($property) ? '' : '[]';
+
+            return $this->getClassAlias($this->getTargetEntity($property)).$suffix;
+        }
+
+        $doctrineType = $this->classMeta->getTypeOfField($property->getName());
+
+        return match ($doctrineType) {
+            'int', 'integer', 'float', 'decimal', 'time', 'time_immutable', 'timestamp', 'timestamp_immutable' => 'number',
+            'bool', 'boolean' => 'boolean',
+            'string', 'text', 'guid' => 'string',
+            null, 'datetime', 'datetime_immutable', 'date', 'date_immutable', 'object', 'blob' => 'any',
+            'array', 'simple_array', 'json', 'json_array' => 'any[]',
+            default => throw new \RuntimeException(\sprintf('Unsupported type doctrine property "%s" (%s) in class "%s"', $doctrineType, $property->getName(), $this->classMeta->getName())),
+        };
+    }
+
     private function getNullable(\ReflectionProperty $property): string
     {
         if ($this->classMeta->hasAssociation($property->getName())) {
-            $associationMapping = $this->getAssociationMapping($property->getName());
-
-            // @codeCoverageIgnoreStart
-            if (\is_array($associationMapping)) {
-                return 1 === /* ClassMetadata::ONE_TO_ONE */ $associationMapping['type'] || 2 === /* ClassMetadata::MANY_TO_ONE */ $associationMapping['type'] ? '?' : '';
-            }
-            // @codeCoverageIgnoreEnd
-
-            return $associationMapping->isToOne() ? '?' : '';
+            return $this->isAssociationToOne($property) ? '?' : '';
         }
 
         if ('any' === $this->getType($property)) {
@@ -130,10 +136,5 @@ class ModelTypingGenerator
         }
 
         return $this->classMeta->isNullable($property->getName()) ? '?' : '';
-    }
-
-    private function getName(\ReflectionProperty $property): string
-    {
-        return \sprintf('%s', $property->getName());
     }
 }
