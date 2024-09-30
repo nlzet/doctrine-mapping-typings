@@ -93,7 +93,7 @@ class ModelTypingGenerator
         };
     }
 
-    private function renameClass(string $class): string
+    public function renameClass(string $class): string
     {
         $stripped = str_replace('\\', '', $class);
 
