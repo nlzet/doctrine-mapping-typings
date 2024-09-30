@@ -55,6 +55,10 @@ use Nlzet\DoctrineMappingTypings\Typings\GeneratorConfig;
 use Nlzet\DoctrineMappingTypings\Typings\ModelTypingGenerator;
 
 $generatorConfig = new GeneratorConfig();
+$generatorConfig->setExcludePatterns([]);
+$generatorConfig->setOnlyExposed(false);
+$generatorConfig->setClassAliases(['NlzetDoctrineMappingTypingsTestsFixtureEntityAddress' => 'NlzetCustomAddress']);
+$generatorConfig->setClassReplacements(['NlzetDoctrineMappingTypingsTestsFixtureEntity' => 'Nlzet']);
 $reader = new EntityReader($generatorConfig, $entityManager);
 
 foreach ($reader->getEntities() as $classMeta) {
