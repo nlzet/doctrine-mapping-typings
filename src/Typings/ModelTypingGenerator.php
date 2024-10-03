@@ -30,7 +30,12 @@ class ModelTypingGenerator
     public function generate(): string
     {
         $className = $this->classMeta->getName();
-        $result = 'export type '.$this->getClassAlias($className).' = {'.\PHP_EOL;
+        $result = '';
+        if ($this->generatorConfig->isTreatOptionalAsNullable()) {
+            $result .= 'type Nullable<T> = T | null;'.\PHP_EOL.\PHP_EOL;
+        }
+
+        $result .= 'export type '.$this->getClassAlias($className).' = {'.\PHP_EOL;
         foreach ($this->properties as $property) {
             $result .= $this->generateProperty($property);
         }
@@ -59,11 +64,20 @@ class ModelTypingGenerator
 
     public function generateProperty(\ReflectionProperty $property): string
     {
+        $nullableStart = '';
+        $nullableEnd = '';
+        if ($this->generatorConfig->isTreatOptionalAsNullable() && '?' === $this->getOptional($property)) {
+            $nullableStart = 'Nullable<';
+            $nullableEnd = '>';
+        }
+
         return \sprintf(
-            "    %s%s: %s;\n",
+            "    %s%s: %s%s%s;\n",
             $property->getName(),
-            $this->getNullable($property),
-            $this->getType($property)
+            $this->getOptional($property),
+            $nullableStart,
+            $this->getType($property),
+            $nullableEnd
         );
     }
 
@@ -125,16 +139,23 @@ class ModelTypingGenerator
         };
     }
 
-    private function getNullable(\ReflectionProperty $property): string
+    private function getOptional(\ReflectionProperty $property): string
     {
+        if ($this->generatorConfig->isAlwaysOptional()) {
+            return '?';
+        }
+
+        // treat associations differently than fields.
         if ($this->classMeta->hasAssociation($property->getName())) {
+            // always nullable for to-one associations
             return $this->isAssociationToOne($property) ? '?' : '';
         }
 
+        // any type is always nullable.
         if ('any' === $this->getType($property)) {
             return '';
         }
 
-        return $this->classMeta->isNullable($property->getName()) ? '?' : '';
+        return $this->generatorConfig->isTreatNullableAsOptional() && $this->classMeta->isNullable($property->getName()) ? '?' : '';
     }
 }

@@ -14,32 +14,19 @@ composer require nlzet/doctrine-mapping-typings
 
 ## Configuration
 
-### Exclude patterns:
-
-Add regex or string patterns of FQCNs to exclude from the typings (don't add \ in the search patterns).
 ```php
+// Exclude patterns: Add regex or string patterns of FQCNs to exclude from the typings (don't add \ in the search patterns).
 $generatorConfig->setExcludePatterns(['/P[ea]rson/', 'Keyword']);
-```
-
-### Class aliases:
-
-Add class aliases to replace the original class name with a custom name. Class aliases take precedence over class replacements.
-```php
+// Class aliases: Add class aliases to replace the original class name with a custom name. Class aliases take precedence over class replacements.
 $generatorConfig->setClassAliases(['NlzetDoctrineMappingTypingsTestsFixtureEntityAddress' => 'NlzetCustomAddress']);
-```
-
-### Class replacements:
-
-Add class replacements key-value pairs to replace the original class name with a custom name.
-```php
+// Class replacements: Add class replacements key-value pairs to replace the original class name with a custom name.
 $generatorConfig->setClassReplacements(['NlzetDoctrineMappingTypingsTestsFixtureEntity' => 'Nlzet']);
-```
-
-### Only exposed:
-
-Set to true to only generate typings for exposed properties, defined by JMS Serializer Expose/Exclude and ExclusionPolicy.
-```php
+// Only exposed: Set to true to only generate typings for exposed properties, defined by JMS Serializer Expose/Exclude and ExclusionPolicy.
 $generatorConfig->setOnlyExposed(true);
+// Only exposed: Set to true to always set properties as optional.
+$generatorConfig->setAlwaysOptional(true);
+// Only exposed: Set to true to treat nullable properties as optional type properties.
+$generatorConfig->setTreatNullableAsOptional(true);
 ```
 
 ## Example
@@ -57,6 +44,8 @@ use Nlzet\DoctrineMappingTypings\Typings\ModelTypingGenerator;
 $generatorConfig = new GeneratorConfig();
 $generatorConfig->setExcludePatterns([]);
 $generatorConfig->setOnlyExposed(false);
+$generatorConfig->setTreatOptionalAsNullable(false);
+$generatorConfig->setTreatNullableAsOptional(false);
 $generatorConfig->setClassAliases(['NlzetDoctrineMappingTypingsTestsFixtureEntityAddress' => 'NlzetCustomAddress']);
 $generatorConfig->setClassReplacements(['NlzetDoctrineMappingTypingsTestsFixtureEntity' => 'Nlzet']);
 $reader = new EntityReader($generatorConfig, $entityManager);

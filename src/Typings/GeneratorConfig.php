@@ -30,6 +30,12 @@ class GeneratorConfig
 
     private bool $onlyExposed = false;
 
+    private bool $alwaysOptional = false;
+
+    private bool $treatOptionalAsNullable = false;
+
+    private bool $treatNullableAsOptional = true;
+
     /**
      * @return string[]
      */
@@ -86,5 +92,41 @@ class GeneratorConfig
     public function setClassReplacements(array $classReplacements): void
     {
         $this->classReplacements = $classReplacements;
+    }
+
+    public function isAlwaysOptional(): bool
+    {
+        return $this->alwaysOptional;
+    }
+
+    public function setAlwaysOptional(bool $alwaysOptional): self
+    {
+        $this->alwaysOptional = $alwaysOptional;
+
+        return $this;
+    }
+
+    public function isTreatOptionalAsNullable(): bool
+    {
+        return $this->treatOptionalAsNullable;
+    }
+
+    public function setTreatOptionalAsNullable(bool $treatOptionalAsNullable): self
+    {
+        $this->treatOptionalAsNullable = $treatOptionalAsNullable;
+
+        return $this;
+    }
+
+    public function isTreatNullableAsOptional(): bool
+    {
+        return $this->treatNullableAsOptional;
+    }
+
+    public function setTreatNullableAsOptional(bool $treatNullableAsOptional): self
+    {
+        $this->treatNullableAsOptional = $treatNullableAsOptional;
+
+        return $this;
     }
 }
