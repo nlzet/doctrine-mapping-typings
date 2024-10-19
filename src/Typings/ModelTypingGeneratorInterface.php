@@ -20,4 +20,6 @@ interface ModelTypingGeneratorInterface
      * @param \ReflectionProperty[] $properties
      */
     public function generate(ClassMetadata $classMeta, array $properties): string;
+
+    public function getGeneratorConfig(): GeneratorConfig;
 }

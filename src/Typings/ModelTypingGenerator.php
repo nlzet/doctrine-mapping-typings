@@ -170,4 +170,9 @@ class ModelTypingGenerator implements ModelTypingGeneratorInterface
 
         return $this->generatorConfig->isTreatNullableAsOptional() && $classMeta->isNullable($property->getName()) ? '?' : '';
     }
+
+    public function getGeneratorConfig(): GeneratorConfig
+    {
+        return $this->generatorConfig;
+    }
 }
