@@ -50,8 +50,9 @@ $generatorConfig->setClassAliases(['NlzetDoctrineMappingTypingsTestsFixtureEntit
 $generatorConfig->setClassReplacements(['NlzetDoctrineMappingTypingsTestsFixtureEntity' => 'Nlzet']);
 $reader = new EntityReader($generatorConfig, $entityManager);
 
+$generator = new ModelTypingGenerator($generatorConfig);
 foreach ($reader->getEntities() as $classMeta) {
-    $outputs[] = (new ModelTypingGenerator($generatorConfig, $classMeta, $reader->getProperties($classMeta->getName())))->generate();
+    $outputs[] = $generator->generate($classMeta, $reader->getProperties($classMeta->getName()));
 }
 
 echo implode(\PHP_EOL, $outputs).\PHP_EOL;

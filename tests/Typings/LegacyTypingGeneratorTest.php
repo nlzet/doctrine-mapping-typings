@@ -59,8 +59,8 @@ class LegacyTypingGeneratorTest extends TestCase
             'targetEntity' => Address::class,
         ]);
 
-        $generator = new ModelTypingGenerator($generatorConfig, $classMetadata, $properties);
+        $generator = new ModelTypingGenerator($generatorConfig);
 
-        static::assertStringContainsString('type', $generator->generate());
+        static::assertStringContainsString('type', $generator->generate($classMetadata, $properties));
     }
 }

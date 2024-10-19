@@ -14,30 +14,25 @@ namespace Nlzet\DoctrineMappingTypings\Typings;
 use Doctrine\ORM\Mapping\AssociationMapping;
 use Doctrine\ORM\Mapping\ClassMetadata;
 
-class ModelTypingGenerator
+class ModelTypingGenerator implements ModelTypingGeneratorInterface
 {
-    /**
-     * @param ClassMetadata<object> $classMeta
-     * @param \ReflectionProperty[] $properties
-     */
     public function __construct(
         private readonly GeneratorConfig $generatorConfig,
-        private readonly ClassMetadata $classMeta,
-        private readonly array $properties,
     ) {
     }
 
-    public function generate(): string
+    public function generate(ClassMetadata $classMeta, array $properties): string
     {
-        $className = $this->classMeta->getName();
+        $className = $classMeta->getName();
+
         $result = '';
         if ($this->generatorConfig->isTreatOptionalAsNullable()) {
             $result .= 'type Nullable<T> = T | null;'.\PHP_EOL.\PHP_EOL;
         }
 
         $result .= 'export type '.$this->getClassAlias($className).' = {'.\PHP_EOL;
-        foreach ($this->properties as $property) {
-            $result .= $this->generateProperty($property);
+        foreach ($properties as $property) {
+            $result .= $this->generateProperty($classMeta, $property);
         }
         $result .= '};'.\PHP_EOL;
 
@@ -62,11 +57,14 @@ class ModelTypingGenerator
         return $stripped;
     }
 
-    public function generateProperty(\ReflectionProperty $property): string
+    /**
+     * @param ClassMetadata<object> $classMeta
+     */
+    public function generateProperty(ClassMetadata $classMeta, \ReflectionProperty $property): string
     {
         $nullableStart = '';
         $nullableEnd = '';
-        if ($this->generatorConfig->isTreatOptionalAsNullable() && '?' === $this->getOptional($property)) {
+        if ($this->generatorConfig->isTreatOptionalAsNullable() && '?' === $this->getOptional($classMeta, $property)) {
             $nullableStart = 'Nullable<';
             $nullableEnd = '>';
         }
@@ -74,9 +72,9 @@ class ModelTypingGenerator
         return \sprintf(
             "    %s%s: %s%s%s;\n",
             $property->getName(),
-            $this->getOptional($property),
+            $this->getOptional($classMeta, $property),
             $nullableStart,
-            $this->getType($property),
+            $this->getType($classMeta, $property),
             $nullableEnd
         );
     }
@@ -84,19 +82,24 @@ class ModelTypingGenerator
     /**
      * Type support helper for older doctrine versions returning an array.
      *
+     * @param ClassMetadata<object> $classMeta
+     *
      * @return array<string, mixed>|AssociationMapping
      */
-    public function getAssociationMapping(string $class): mixed/* : array|AssociationMapping */
+    public function getAssociationMapping(ClassMetadata $classMeta, string $class): mixed/* : array|AssociationMapping */
     {
         /** @var array<string, mixed>|AssociationMapping $associationMapping */
-        $associationMapping = $this->classMeta->getAssociationMapping($class);
+        $associationMapping = $classMeta->getAssociationMapping($class);
 
         return $associationMapping;
     }
 
-    public function isAssociationToOne(\ReflectionProperty $property): bool
+    /**
+     * @param ClassMetadata<object> $classMeta
+     */
+    public function isAssociationToOne(ClassMetadata $classMeta, \ReflectionProperty $property): bool
     {
-        $associationMapping = $this->getAssociationMapping($property->getName());
+        $associationMapping = $this->getAssociationMapping($classMeta, $property->getName());
 
         // @codeCoverageIgnoreStart
         return \is_array($associationMapping)
@@ -105,29 +108,35 @@ class ModelTypingGenerator
         // @codeCoverageIgnoreEnd
     }
 
-    public function getTargetEntity(\ReflectionProperty $property): string
+    /**
+     * @param ClassMetadata<object> $classMeta
+     */
+    public function getTargetEntity(ClassMetadata $classMeta, \ReflectionProperty $property): string
     {
-        $associationMapping = $this->getAssociationMapping($property->getName());
+        $associationMapping = $this->getAssociationMapping($classMeta, $property->getName());
         $targetEntity = \is_array($associationMapping) ? $associationMapping['targetEntity'] : $associationMapping->targetEntity;
 
         // @codeCoverageIgnoreStart
         if (!\is_string($targetEntity)) {
-            throw new \RuntimeException(\sprintf('Missing target entity for association mapping "%s" in class "%s"', $property->getName(), $this->classMeta->getName()));
+            throw new \RuntimeException(\sprintf('Missing target entity for association mapping "%s" in class "%s"', $property->getName(), $classMeta->getName()));
         }
         // @codeCoverageIgnoreEnd
 
         return $targetEntity;
     }
 
-    private function getType(\ReflectionProperty $property): string
+    /**
+     * @param ClassMetadata<object> $classMeta
+     */
+    public function getType(ClassMetadata $classMeta, \ReflectionProperty $property): string
     {
-        if ($this->classMeta->hasAssociation($property->getName())) {
-            $suffix = $this->isAssociationToOne($property) ? '' : '[]';
+        if ($classMeta->hasAssociation($property->getName())) {
+            $suffix = $this->isAssociationToOne($classMeta, $property) ? '' : '[]';
 
-            return $this->getClassAlias($this->getTargetEntity($property)).$suffix;
+            return $this->getClassAlias($this->getTargetEntity($classMeta, $property)).$suffix;
         }
 
-        $doctrineType = $this->classMeta->getTypeOfField($property->getName());
+        $doctrineType = $classMeta->getTypeOfField($property->getName());
 
         return match ($doctrineType) {
             'int', 'integer', 'float', 'decimal', 'time', 'time_immutable', 'timestamp', 'timestamp_immutable' => 'number',
@@ -135,27 +144,30 @@ class ModelTypingGenerator
             'string', 'text', 'guid' => 'string',
             null, 'datetime', 'datetime_immutable', 'date', 'date_immutable', 'object', 'blob' => 'any',
             'array', 'simple_array', 'json', 'json_array' => 'any[]',
-            default => throw new \RuntimeException(\sprintf('Unsupported type doctrine property "%s" (%s) in class "%s"', $doctrineType, $property->getName(), $this->classMeta->getName())),
+            default => throw new \RuntimeException(\sprintf('Unsupported type doctrine property "%s" (%s) in class "%s"', $doctrineType, $property->getName(), $classMeta->getName())),
         };
     }
 
-    private function getOptional(\ReflectionProperty $property): string
+    /**
+     * @param ClassMetadata<object> $classMeta
+     */
+    public function getOptional(ClassMetadata $classMeta, \ReflectionProperty $property): string
     {
         if ($this->generatorConfig->isAlwaysOptional()) {
             return '?';
         }
 
         // treat associations differently than fields.
-        if ($this->classMeta->hasAssociation($property->getName())) {
+        if ($classMeta->hasAssociation($property->getName())) {
             // always nullable for to-one associations
-            return $this->isAssociationToOne($property) ? '?' : '';
+            return $this->isAssociationToOne($classMeta, $property) ? '?' : '';
         }
 
         // any type is always nullable.
-        if ('any' === $this->getType($property)) {
+        if ('any' === $this->getType($classMeta, $property)) {
             return '';
         }
 
-        return $this->generatorConfig->isTreatNullableAsOptional() && $this->classMeta->isNullable($property->getName()) ? '?' : '';
+        return $this->generatorConfig->isTreatNullableAsOptional() && $classMeta->isNullable($property->getName()) ? '?' : '';
     }
 }

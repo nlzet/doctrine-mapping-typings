@@ -41,9 +41,9 @@ class ModelTypingGeneratorTest extends TestCase
         $properties = $reader->getProperties(Address::class);
 
         $classMetadata = $this->entityManager->getClassMetadata(Address::class);
-        $generator = new ModelTypingGenerator($generatorConfig, $classMetadata, $properties);
+        $generator = new ModelTypingGenerator($generatorConfig);
 
-        $output = $generator->generate();
+        $output = $generator->generate($classMetadata, $properties);
         static::assertSame('export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
     id: number;
     houseNumber?: string;
@@ -61,7 +61,7 @@ class ModelTypingGeneratorTest extends TestCase
 ', $output);
 
         $generatorConfig->setTreatNullableAsOptional(false);
-        $output = $generator->generate();
+        $output = $generator->generate($classMetadata, $properties);
         static::assertSame('export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
     id: number;
     houseNumber: string;
@@ -79,7 +79,7 @@ class ModelTypingGeneratorTest extends TestCase
 ', $output);
 
         $generatorConfig->setAlwaysOptional(true);
-        $output = $generator->generate();
+        $output = $generator->generate($classMetadata, $properties);
         static::assertSame('export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
     id?: number;
     houseNumber?: string;
@@ -106,9 +106,9 @@ class ModelTypingGeneratorTest extends TestCase
         $properties = $reader->getProperties(Address::class);
 
         $classMetadata = $this->entityManager->getClassMetadata(Address::class);
-        $generator = new ModelTypingGenerator($generatorConfig, $classMetadata, $properties);
+        $generator = new ModelTypingGenerator($generatorConfig);
 
-        $output = $generator->generate();
+        $output = $generator->generate($classMetadata, $properties);
         static::assertSame('type Nullable<T> = T | null;
 
 export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
@@ -128,7 +128,7 @@ export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
 ', $output);
 
         $generatorConfig->setAlwaysOptional(true);
-        $output = $generator->generate();
+        $output = $generator->generate($classMetadata, $properties);
         static::assertSame('type Nullable<T> = T | null;
 
 export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
@@ -155,8 +155,8 @@ export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
         $properties = $reader->getProperties(Address::class);
 
         $classMetadata = $this->entityManager->getClassMetadata(Address::class);
-        $generator = new ModelTypingGenerator($generatorConfig, $classMetadata, $properties);
-        $output = $generator->generate();
+        $generator = new ModelTypingGenerator($generatorConfig);
+        $output = $generator->generate($classMetadata, $properties);
 
         static::assertSame('export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
     id: number;
@@ -182,8 +182,8 @@ export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
         $properties = $reader->getProperties(Person::class);
 
         $classMetadata = $this->entityManager->getClassMetadata(Person::class);
-        $generator = new ModelTypingGenerator($generatorConfig, $classMetadata, $properties);
-        $output = $generator->generate();
+        $generator = new ModelTypingGenerator($generatorConfig);
+        $output = $generator->generate($classMetadata, $properties);
 
         static::assertSame('export type NlzetDoctrineMappingTypingsTestsFixtureEntityPerson = {
     id: number;
@@ -206,8 +206,8 @@ export type NlzetDoctrineMappingTypingsTestsFixtureEntityAddress = {
         $properties = $reader->getProperties(Person::class);
 
         $classMetadata = $this->entityManager->getClassMetadata(Person::class);
-        $generator = new ModelTypingGenerator($generatorConfig, $classMetadata, $properties);
-        $output = $generator->generate();
+        $generator = new ModelTypingGenerator($generatorConfig);
+        $output = $generator->generate($classMetadata, $properties);
 
         static::assertSame('export type NlzetPerson = {
     id: number;

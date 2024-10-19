@@ -54,8 +54,9 @@ $entityManager = new EntityManager($connection, $configuration, $eventManager);
 // generate typings.
 $outputs = [];
 $reader = new EntityReader($generatorConfig, $entityManager);
+$generator = new ModelTypingGenerator($generatorConfig);
 foreach ($reader->getEntities() as $classMeta) {
-    $outputs[] = (new ModelTypingGenerator($generatorConfig, $classMeta, $reader->getProperties($classMeta->getName())))->generate();
+    $outputs[] = $generator->generate($classMeta, $reader->getProperties($classMeta->getName()));
 }
 
 // output or save to file.
